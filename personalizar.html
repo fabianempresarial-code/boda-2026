@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personaliza tu Recuerdo - ClOanis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #d4a7b7; /* Usa el mismo color primario que la home */
+            --primary-hover: #c090a0; 
+            --bg: #f8fafc; /* Color de fondo */
+            --text-dark: #333;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; max-width: 500px; width: 100%; }
+        h2 { color: var(--text-dark); margin-bottom: 8px; }
+        p { color: #64748b; font-size: 0.9rem; margin-bottom: 24px; }
+        
+        input[type="text"] {
+            width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px;
+            margin-bottom: 15px; box-sizing: border-box; font-size: 1rem; outline: none; transition: 0.2s;
+        }
+        input[type="text"]:focus { border-color: var(--primary); }
+
+        .file-label {
+            display: block; background: #f1f5f9; color: #475569; padding: 14px;
+            border-radius: 12px; cursor: pointer; font-weight: 600; border: 2px dashed #cbd5e1;
+            margin-bottom: 20px; transition: 0.2s;
+        }
+        .file-label:hover { background: #e2e8f0; }
+
+        canvas { max-width: 100%; height: auto; border-radius: 16px; margin-top: 15px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+
+        .btn-download {
+            margin-top: 20px; width: 100%; background: var(--primary); color: white; border: none;
+            padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: 0.3s; display: none;
+        }
+        .btn-download:hover { background: var(--primary-hover); transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>✨ Personaliza tu foto</h2>
+    <p>Escribe tu nombre y sube tu mejor imagen para crear un recuerdo.</p>
+    
+    <input type="text" id="userName" placeholder="Escribe tu nombre aquí..." maxlength="25">
+
+    <label for="upload" class="file-label" id="labelUpload">📁 Paso 1: Seleccionar Foto</label>
+    <input type="file" id="upload" accept="image/*" style="display:none">
+
+    <canvas id="canvas"></canvas>
+    
+    <button id="downloadBtn" class="btn-download">⬇️ Descargar con mi nombre</button>
+</div>
+
+<script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const userNameInput = document.getElementById('userName');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // CONFIGURACIÓN DEL MARCO - ¡Asegúrate de que este sea tu marco PNG transparente!
+    const MARCO_URL = 'https://i.imgur.com/7Pe9Z6p.png'; 
+
+    function procesarImagen() {
+        // No procesar si no hay archivo subido
+        if (!upload.files[0]) {
+            canvas.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            document.getElementById('labelUpload').innerText = "📁 Paso 1: Seleccionar Foto";
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const imgUsuario = new Image();
+            imgUsuario.onload = () => {
+                const marco = new Image();
+                marco.crossOrigin = "anonymous"; 
+                marco.src = MARCO_URL;
+
+                marco.onload = () => {
+                    canvas.width = marco.width;
+                    canvas.height = marco.height;
+
+                    // 1. Dibujar Foto (ajuste automático)
+                    const scale = Math.max(canvas.width / imgUsuario.width, canvas.height / imgUsuario.height);
+                    const x = (canvas.width / 2) - (imgUsuario.width / 2) * scale;
+                    const y = (canvas.height / 2) - (imgUsuario.height / 2) * scale;
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar antes de dibujar
+                    ctx.drawImage(imgUsuario, x, y, imgUsuario.width * scale, imgUsuario.height * scale);
+
+                    // 2. Dibujar Marco
+                    ctx.drawImage(marco, 0, 0);
+
+                    // 3. Dibujar Texto (Nombre)
+                    const nombre = userNameInput.value.trim().toUpperCase();
+                    if (nombre) {
+                        ctx.fillStyle = "white"; // Color del texto
+                        ctx.strokeStyle = "#4a4a4a"; // Borde del texto para que se lea bien (gris oscuro)
+                        ctx.lineWidth = 8; // Grosor del borde
+                        ctx.font = "bold 80px 'Inter', sans-serif"; // Tamaño y fuente
+                        ctx.textAlign = "center";
+                        
+                        // Posición del texto (ajusta el segundo número para subirlo o bajarlo)
+                        const posX = canvas.width / 2;
+                        const posY = canvas.height - 100; // Ajusta este valor si necesitas
+
+                        ctx.strokeText(nombre, posX, posY);
+                        ctx.fillText(nombre, posX, posY);
+                    }
+
+                    canvas.style.display = 'block';
+                    downloadBtn.style.display = 'block';
+                    document.getElementById('labelUpload').innerText = "✅ Foto Cargada - ¡Listo!";
+                };
+            };
+            imgUsuario.src = event.target.result;
+        };
+        reader.readAsDataURL(upload.files[0]);
+    }
+
+    // Escuchar cambios en la foto y en el texto en tiempo real
+    upload.addEventListener('change', procesarImagen);
+    userNameInput.addEventListener('input', procesarImagen);
+
+    downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = `foto_recuerdo_${userNameInput.value || 'sin_nombre'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+</script>
+
+</body>
+</html>
