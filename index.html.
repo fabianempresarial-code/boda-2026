@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Fotos con Marco</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f0f2f5; margin: 0; }
+        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 500px; }
+        canvas { max-width: 100%; height: auto; margin-top: 20px; border: 1px solid #ddd; display: none; }
+        input[type="file"] { margin: 20px 0; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:disabled { background: #ccc; }
+        button:hover:not(:disabled) { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📸 Sube tu foto</h2>
+    <p>Añadiremos automáticamente el marco del evento.</p>
+    
+    <input type="file" id="upload" accept="image/*">
+    <br>
+    <canvas id="canvas"></canvas>
+    <br>
+    <button id="downloadBtn" disabled>Descargar Imagen</button>
+</div>
+
+<script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // CONFIGURACIÓN: Reemplaza esta URL por la de tu marco (debe ser PNG transparente)
+    const MARCO_URL = 'https://i.imgur.com/7Pe9Z6p.png'; 
+
+    upload.addEventListener('change', (e) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const imgUsuario = new Image();
+            imgUsuario.onload = () => {
+                const marco = new Image();
+                marco.crossOrigin = "anonymous"; // Evita problemas de CORS
+                marco.src = MARCO_URL;
+
+                marco.onload = () => {
+                    // Ajustamos el canvas al tamaño del marco
+                    canvas.width = marco.width;
+                    canvas.height = marco.height;
+
+                    // 1. Dibujar la foto del usuario (escalada para cubrir el fondo)
+                    const scale = Math.max(canvas.width / imgUsuario.width, canvas.height / imgUsuario.height);
+                    const x = (canvas.width / 2) - (imgUsuario.width / 2) * scale;
+                    const y = (canvas.height / 2) - (imgUsuario.height / 2) * scale;
+                    ctx.drawImage(imgUsuario, x, y, imgUsuario.width * scale, imgUsuario.height * scale);
+
+                    // 2. Dibujar el marco encima
+                    ctx.drawImage(marco, 0, 0);
+
+                    canvas.style.display = 'block';
+                    downloadBtn.disabled = false;
+                };
+            };
+            imgUsuario.src = event.target.result;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    });
+
+    downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'mi-foto-con-marco.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+</script>
+
+</body>
+</html>
