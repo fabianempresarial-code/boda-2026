@@ -3,28 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Fotos con Marco</title>
+    <title>Generador de Fotos Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #f0f2f5; margin: 0; }
-        .container { background: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; max-width: 500px; }
-        canvas { max-width: 100%; height: auto; margin-top: 20px; border: 1px solid #ddd; display: none; }
-        input[type="file"] { margin: 20px 0; }
-        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:disabled { background: #ccc; }
-        button:hover:not(:disabled) { background: #0056b3; }
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f8fafc;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg); 
+            display: flex; align-items: center; justify-content: center; 
+            min-height: 100vh; margin: 0; padding: 20px;
+        }
+        .card {
+            background: white; padding: 2.5rem; border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center; max-width: 450px; width: 100%;
+        }
+        h2 { color: #1e293b; margin-bottom: 0.5rem; }
+        p { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+        
+        /* Input de archivo personalizado */
+        .file-input-wrapper {
+            position: relative; margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .file-label {
+            display: inline-block; background: #e2e8f0; color: #475569;
+            padding: 12px 24px; border-radius: 10px; cursor: pointer;
+            font-weight: 600; transition: 0.2s;
+        }
+        .file-label:hover { background: #cbd5e1; }
+
+        canvas { 
+            max-width: 100%; height: auto; border-radius: 12px;
+            margin-top: 15px; display: none; border: 1px solid #e2e8f0;
+        }
+
+        .btn-download {
+            margin-top: 20px; width: 100%; background: var(--primary);
+            color: white; border: none; padding: 14px; border-radius: 12px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: 0.3s; display: none;
+        }
+        .btn-download:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-download:active { transform: translateY(0); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>📸 Sube tu foto de recuerdo de Javier y Ingrid </h2>
-    <p>Añadiremos automáticamente el marco del evento de la boda .</p>
+<div class="card">
+    <h2>✨ ¡Crea tu recuerdo!</h2>
+    <p>Sube tu foto y le pondremos el marco oficial al instante.</p>
     
-    <input type="file" id="upload" accept="image/*">
-    <br>
+    <div class="file-input-wrapper">
+        <label for="upload" class="file-label">📁 Seleccionar Foto</label>
+        <input type="file" id="upload" accept="image/*">
+    </div>
+
     <canvas id="canvas"></canvas>
-    <br>
-    <button id="downloadBtn" disabled>Descargar Imagen</button>
+    
+    <button id="downloadBtn" class="btn-download">Descargar Resultado</button>
 </div>
 
 <script>
@@ -33,34 +76,36 @@
     const ctx = canvas.getContext('2d');
     const downloadBtn = document.getElementById('downloadBtn');
 
-    // CONFIGURACIÓN: Reemplaza esta URL por la de tu marco (debe ser PNG transparente)
-    const MARCO_URL = 'https://i.imgur.com/maiAfcR.png';
+    // IMPORTANTE: Pon aquí el link de tu marco PNG transparente
+    const MARCO_URL = 'https://i.imgur.com/maiAfcR.png'; 
 
     upload.addEventListener('change', (e) => {
+        if (!e.target.files[0]) return;
+        
         const reader = new FileReader();
         reader.onload = (event) => {
             const imgUsuario = new Image();
             imgUsuario.onload = () => {
                 const marco = new Image();
-                marco.crossOrigin = "anonymous"; // Evita problemas de CORS
+                marco.crossOrigin = "anonymous"; 
                 marco.src = MARCO_URL;
 
                 marco.onload = () => {
-                    // Ajustamos el canvas al tamaño del marco
                     canvas.width = marco.width;
                     canvas.height = marco.height;
 
-                    // 1. Dibujar la foto del usuario (escalada para cubrir el fondo)
+                    // Dibujar foto usuario (centrada y cubriendo el espacio)
                     const scale = Math.max(canvas.width / imgUsuario.width, canvas.height / imgUsuario.height);
                     const x = (canvas.width / 2) - (imgUsuario.width / 2) * scale;
                     const y = (canvas.height / 2) - (imgUsuario.height / 2) * scale;
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(imgUsuario, x, y, imgUsuario.width * scale, imgUsuario.height * scale);
-
-                    // 2. Dibujar el marco encima
                     ctx.drawImage(marco, 0, 0);
 
                     canvas.style.display = 'block';
-                    downloadBtn.disabled = false;
+                    downloadBtn.style.display = 'block';
+                    document.querySelector('.file-label').innerText = "✅ Foto Cargada";
                 };
             };
             imgUsuario.src = event.target.result;
@@ -70,7 +115,7 @@
 
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
-        link.download = 'mi-foto-con-marco.png';
+        link.download = 'mi-foto-marcada.png';
         link.href = canvas.toDataURL('image/png');
         link.click();
     });
