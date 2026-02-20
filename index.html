@@ -3,84 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador de Fotos Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <title>Generador con Nombre Personalizado</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --bg: #f8fafc;
-        }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg); 
-            display: flex; align-items: center; justify-content: center; 
-            min-height: 100vh; margin: 0; padding: 20px;
-        }
-        .card {
-            background: white; padding: 2.5rem; border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            text-align: center; max-width: 450px; width: 100%;
-        }
-        h2 { color: #1e293b; margin-bottom: 0.5rem; }
-        p { color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem; }
+        :root { --primary: #6366f1; --primary-hover: #4f46e5; --bg: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.08); text-align: center; max-width: 500px; width: 100%; }
+        h2 { color: #1e293b; margin-bottom: 8px; }
+        p { color: #64748b; font-size: 0.9rem; margin-bottom: 24px; }
         
-        /* Input de archivo personalizado */
-        .file-input-wrapper {
-            position: relative; margin-bottom: 20px;
+        input[type="text"] {
+            width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px;
+            margin-bottom: 15px; box-sizing: border-box; font-size: 1rem; outline: none; transition: 0.2s;
         }
-        input[type="file"] {
-            display: none;
-        }
-        .file-label {
-            display: inline-block; background: #e2e8f0; color: #475569;
-            padding: 12px 24px; border-radius: 10px; cursor: pointer;
-            font-weight: 600; transition: 0.2s;
-        }
-        .file-label:hover { background: #cbd5e1; }
+        input[type="text"]:focus { border-color: var(--primary); }
 
-        canvas { 
-            max-width: 100%; height: auto; border-radius: 12px;
-            margin-top: 15px; display: none; border: 1px solid #e2e8f0;
+        .file-label {
+            display: block; background: #f1f5f9; color: #475569; padding: 14px;
+            border-radius: 12px; cursor: pointer; font-weight: 600; border: 2px dashed #cbd5e1;
+            margin-bottom: 20px; transition: 0.2s;
         }
+        .file-label:hover { background: #e2e8f0; }
+
+        canvas { max-width: 100%; height: auto; border-radius: 16px; margin-top: 15px; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 
         .btn-download {
-            margin-top: 20px; width: 100%; background: var(--primary);
-            color: white; border: none; padding: 14px; border-radius: 12px;
-            font-size: 16px; font-weight: 600; cursor: pointer;
+            margin-top: 20px; width: 100%; background: var(--primary); color: white; border: none;
+            padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer;
             transition: 0.3s; display: none;
         }
         .btn-download:hover { background: var(--primary-hover); transform: translateY(-2px); }
-        .btn-download:active { transform: translateY(0); }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>✨ ¡Crea tu recuerdo!</h2>
-    <p>Sube tu foto y le pondremos el marco oficial al instante.</p>
+    <h2>✨ Personaliza tu foto</h2>
+    <p>Escribe tu nombre y sube tu mejor imagen.</p>
     
-    <div class="file-input-wrapper">
-        <label for="upload" class="file-label">📁 Seleccionar Foto</label>
-        <input type="file" id="upload" accept="image/*">
-    </div>
+    <input type="text" id="userName" placeholder="Escribe tu nombre aquí..." maxlength="25">
+
+    <label for="upload" class="file-label" id="labelUpload">📁 Paso 1: Seleccionar Foto</label>
+    <input type="file" id="upload" accept="image/*" style="display:none">
 
     <canvas id="canvas"></canvas>
     
-    <button id="downloadBtn" class="btn-download">Descargar Resultado</button>
+    <button id="downloadBtn" class="btn-download">⬇️ Descargar con mi nombre</button>
 </div>
 
 <script>
     const upload = document.getElementById('upload');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const userNameInput = document.getElementById('userName');
     const downloadBtn = document.getElementById('downloadBtn');
 
-    // IMPORTANTE: Pon aquí el link de tu marco PNG transparente
+    // CONFIGURACIÓN DEL MARCO
     const MARCO_URL = 'https://i.imgur.com/maiAfcR.png'; 
 
-    upload.addEventListener('change', (e) => {
-        if (!e.target.files[0]) return;
+    function procesarImagen() {
+        if (!upload.files[0]) return;
         
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -94,28 +76,49 @@
                     canvas.width = marco.width;
                     canvas.height = marco.height;
 
-                    // Dibujar foto usuario (centrada y cubriendo el espacio)
+                    // 1. Dibujar Foto (ajuste automático)
                     const scale = Math.max(canvas.width / imgUsuario.width, canvas.height / imgUsuario.height);
                     const x = (canvas.width / 2) - (imgUsuario.width / 2) * scale;
                     const y = (canvas.height / 2) - (imgUsuario.height / 2) * scale;
-                    
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(imgUsuario, x, y, imgUsuario.width * scale, imgUsuario.height * scale);
+
+                    // 2. Dibujar Marco
                     ctx.drawImage(marco, 0, 0);
+
+                    // 3. Dibujar Texto (Nombre)
+                    const nombre = userNameInput.value.trim().toUpperCase();
+                    if (nombre) {
+                        ctx.fillStyle = "white"; // Color del texto
+                        ctx.strokeStyle = "black"; // Borde del texto para que se lea bien
+                        ctx.lineWidth = 6;
+                        ctx.font = "bold 80px 'Inter', sans-serif"; // Tamaño y fuente
+                        ctx.textAlign = "center";
+                        
+                        // Posición del texto (ajusta el segundo número para subirlo o bajarlo)
+                        const posX = canvas.width / 2;
+                        const posY = canvas.height - 100; 
+
+                        ctx.strokeText(nombre, posX, posY);
+                        ctx.fillText(nombre, posX, posY);
+                    }
 
                     canvas.style.display = 'block';
                     downloadBtn.style.display = 'block';
-                    document.querySelector('.file-label').innerText = "✅ Foto Cargada";
+                    document.getElementById('labelUpload').innerText = "✅ Foto Cargada";
                 };
             };
             imgUsuario.src = event.target.result;
         };
-        reader.readAsDataURL(e.target.files[0]);
-    });
+        reader.readAsDataURL(upload.files[0]);
+    }
+
+    // Escuchar cambios en la foto y en el texto en tiempo real
+    upload.addEventListener('change', procesarImagen);
+    userNameInput.addEventListener('input', procesarImagen);
 
     downloadBtn.addEventListener('click', () => {
         const link = document.createElement('a');
-        link.download = 'mi-foto-marcada.png';
+        link.download = `foto_${userNameInput.value || 'recuerdo'}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     });
